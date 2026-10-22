@@ -1,239 +1,186 @@
-v2.1.1. / 2025-12-01
+2.0.1 / 2025-11-20
 ==================
 
-* update engines field in the package.json to reflect the current compatibility (Node <18). See: 2.0.0
-* Minor changes (package metadata)
+  * deps: use tilde notation for dependencies
+  * deps: update statuses to 2.0.2
 
-v2.1.0 / 2025-03-05
+2.0.0 / 2021-12-17
 ==================
 
-  * deps: 
-    * use caret notation for dependency versions
-    * encodeurl@^2.0.0
-    * debug@^4.4.0
-  * remove `ServerResponse.headersSent` support check
-  * remove setImmediate support check
-  * update test dependencies
-  * remove unnecessary devDependency `safe-buffer`
-  * remove `unpipe` package and use native `unpipe()` method
-  * remove unnecessary devDependency `readable-stream`
-  * refactor: use object spread to copy error headers
-  * refactor: use replaceAll instead of replace with a regex
-  * refactor: replace setHeaders function with optimized inline header setting
-
-v2.0.0 / 2024-09-02
-==================
-
-  * drop support for node <18
-  * ignore status message for HTTP/2 (#53) 
-
-v1.3.1 / 2024-09-11
-==================
-
-  * deps: encodeurl@~2.0.0
-
-v1.3.0 / 2024-09-03
-==================
-
-  * ignore status message for HTTP/2 (#53)
-
-v1.2.1 / 2024-09-02
-==================
-
-  * Gracefully handle when handling an error and socket is null
-
-1.2.0 / 2022-03-22
-==================
-
-  * Remove set content headers that break response
-  * deps: on-finished@2.4.1
+  * Drop support for Node.js 0.6
+  * Remove `I'mateapot` export; use `ImATeapot` instead
+  * Remove support for status being non-first argument
+  * Rename `UnorderedCollection` constructor to `TooEarly`
+  * deps: depd@2.0.0
+    - Replace internal `eval` usage with `Function` constructor
+    - Use instance methods on `process` to check for listeners
   * deps: statuses@2.0.1
+    - Fix messaging casing of `418 I'm a Teapot`
+    - Remove code 306
     - Rename `425 Unordered Collection` to standard `425 Too Early`
 
-1.1.2 / 2019-05-09
+2021-11-14 / 1.8.1
 ==================
 
-  * Set stricter `Content-Security-Policy` header
-  * deps: parseurl@~1.3.3
-  * deps: statuses@~1.5.0
+  * deps: toidentifier@1.0.1
 
-1.1.1 / 2018-03-06
+2020-06-29 / 1.8.0
 ==================
 
-  * Fix 404 output for bad / missing pathnames
-  * deps: encodeurl@~1.0.2
-    - Fix encoding `%` as last character
-  * deps: statuses@~1.4.0
+  * Add `isHttpError` export to determine if value is an HTTP error
+  * deps: setprototypeof@1.2.0
 
-1.1.0 / 2017-09-24
+2019-06-24 / 1.7.3
 ==================
 
-  * Use `res.headersSent` when available
+  * deps: inherits@2.0.4
 
-1.0.6 / 2017-09-22
+2019-02-18 / 1.7.2
 ==================
 
-  * deps: debug@2.6.9
+  * deps: setprototypeof@1.1.1
 
-1.0.5 / 2017-09-15
+2018-09-08 / 1.7.1
 ==================
 
-  * deps: parseurl@~1.3.2
-    - perf: reduce overhead for full URLs
-    - perf: unroll the "fast-path" `RegExp`
+  * Fix error creating objects in some environments
 
-1.0.4 / 2017-08-03
+2018-07-30 / 1.7.0
 ==================
 
-  * deps: debug@2.6.8
+  * Set constructor name when possible
+  * Use `toidentifier` module to make class names
+  * deps: statuses@'>= 1.5.0 < 2'
 
-1.0.3 / 2017-05-16
+2018-03-29 / 1.6.3
 ==================
 
-  * deps: debug@2.6.7
-    - deps: ms@2.0.0
+  * deps: depd@~1.1.2
+    - perf: remove argument reassignment
+  * deps: setprototypeof@1.1.0
+  * deps: statuses@'>= 1.4.0 < 2'
 
-1.0.2 / 2017-04-22
+2017-08-04 / 1.6.2
 ==================
 
-  * deps: debug@2.6.4
-    - deps: ms@0.7.3
+  * deps: depd@1.1.1
+    - Remove unnecessary `Buffer` loading
 
-1.0.1 / 2017-03-21
+2017-02-20 / 1.6.1
 ==================
 
-  * Fix missing `</html>` in HTML document
-  * deps: debug@2.6.3
-    - Fix: `DEBUG_MAX_ARRAY_LENGTH`
+  * deps: setprototypeof@1.0.3
+    - Fix shim for old browsers
 
-1.0.0 / 2017-02-15
+2017-02-14 / 1.6.0
 ==================
 
-  * Fix exception when `err` cannot be converted to a string
-  * Fully URL-encode the pathname in the 404 message
-  * Only include the pathname in the 404 message
-  * Send complete HTML document
-  * Set `Content-Security-Policy: default-src 'self'` header
-  * deps: debug@2.6.1
-    - Allow colors in workers
-    - Deprecated `DEBUG_FD` environment variable set to `3` or higher
-    - Fix error when running under React Native
-    - Use same color for same namespace
-    - deps: ms@0.7.2
+  * Accept custom 4xx and 5xx status codes in factory
+  * Add deprecation message to `"I'mateapot"` export
+  * Deprecate passing status code as anything except first argument in factory
+  * Deprecate using non-error status codes
+  * Make `message` property enumerable for `HttpError`s
 
-0.5.1 / 2016-11-12
+2016-11-16 / 1.5.1
 ==================
 
-  * Fix exception when `err.headers` is not an object
-  * deps: statuses@~1.3.1
-  * perf: hoist regular expressions
-  * perf: remove duplicate validation path
+  * deps: inherits@2.0.3
+    - Fix issue loading in browser
+  * deps: setprototypeof@1.0.2
+  * deps: statuses@'>= 1.3.1 < 2'
 
-0.5.0 / 2016-06-15
+2016-05-18 / 1.5.0
 ==================
 
-  * Change invalid or non-numeric status code to 500
-  * Overwrite status message to match set status code
-  * Prefer `err.statusCode` if `err.status` is invalid
-  * Set response headers from `err.headers` object
-  * Use `statuses` instead of `http` module for status messages
-    - Includes all defined status messages
-
-0.4.1 / 2015-12-02
-==================
-
-  * deps: escape-html@~1.0.3
+  * Support new code `421 Misdirected Request`
+  * Use `setprototypeof` module to replace `__proto__` setting
+  * deps: statuses@'>= 1.3.0 < 2'
+    - Add `421 Misdirected Request`
     - perf: enable strict mode
-    - perf: optimize string replacement
-    - perf: use faster string coercion
-
-0.4.0 / 2015-06-14
-==================
-
-  * Fix a false-positive when unpiping in Node.js 0.8
-  * Support `statusCode` property on `Error` objects
-  * Use `unpipe` module for unpiping requests
-  * deps: escape-html@1.0.2
-  * deps: on-finished@~2.3.0
-    - Add defined behavior for HTTP `CONNECT` requests
-    - Add defined behavior for HTTP `Upgrade` requests
-    - deps: ee-first@1.1.1
   * perf: enable strict mode
-  * perf: remove argument reassignment
 
-0.3.6 / 2015-05-11
+2016-01-28 / 1.4.0
 ==================
 
-  * deps: debug@~2.2.0
-    - deps: ms@0.7.1
+  * Add `HttpError` export, for `err instanceof createError.HttpError`
+  * deps: inherits@2.0.1
+  * deps: statuses@'>= 1.2.1 < 2'
+    - Fix message for status 451
+    - Remove incorrect nginx status code
 
-0.3.5 / 2015-04-22
+2015-02-02 / 1.3.1
 ==================
 
-  * deps: on-finished@~2.2.1
-    - Fix `isFinished(req)` when data buffered
+  * Fix regression where status can be overwritten in `createError` `props`
 
-0.3.4 / 2015-03-15
+2015-02-01 / 1.3.0
 ==================
 
-  * deps: debug@~2.1.3
-    - Fix high intensity foreground color for bold
-    - deps: ms@0.7.0
+  * Construct errors using defined constructors from `createError`
+  * Fix error names that are not identifiers
+    - `createError["I'mateapot"]` is now `createError.ImATeapot`
+  * Set a meaningful `name` property on constructed errors
 
-0.3.3 / 2015-01-01
+2014-12-09 / 1.2.8
 ==================
 
-  * deps: debug@~2.1.1
-  * deps: on-finished@~2.2.0
+  * Fix stack trace from exported function
+  * Remove `arguments.callee` usage
 
-0.3.2 / 2014-10-22
+2014-10-14 / 1.2.7
 ==================
 
-  * deps: on-finished@~2.1.1
-    - Fix handling of pipelined requests
+  * Remove duplicate line
 
-0.3.1 / 2014-10-16
+2014-10-02 / 1.2.6
 ==================
 
-  * deps: debug@~2.1.0
-    - Implement `DEBUG_FD` env variable support
+  * Fix `expose` to be `true` for `ClientError` constructor
 
-0.3.0 / 2014-09-17
+2014-09-28 / 1.2.5
 ==================
 
-  * Terminate in progress response only on error
-  * Use `on-finished` to determine request status
+  * deps: statuses@1
 
-0.2.0 / 2014-09-03
+2014-09-21 / 1.2.4
 ==================
 
-  * Set `X-Content-Type-Options: nosniff` header
-  * deps: debug@~2.0.0
+  * Fix dependency version to work with old `npm`s
 
-0.1.0 / 2014-07-16
+2014-09-21 / 1.2.3
 ==================
 
-  * Respond after request fully read
-    - prevents hung responses and socket hang ups
-  * deps: debug@1.0.4
+  * deps: statuses@~1.1.0
 
-0.0.3 / 2014-07-11
+2014-09-21 / 1.2.2
 ==================
 
-  * deps: debug@1.0.3
-    - Add support for multiple wildcards in namespaces
+  * Fix publish error
 
-0.0.2 / 2014-06-19
+2014-09-21 / 1.2.1
 ==================
 
-  * Handle invalid status codes
+  * Support Node.js 0.6
+  * Use `inherits` instead of `util`
 
-0.0.1 / 2014-06-05
+2014-09-09 / 1.2.0
 ==================
 
-  * deps: debug@1.0.2
+  * Fix the way inheriting functions
+  * Support `expose` being provided in properties argument
 
-0.0.0 / 2014-06-05
+2014-09-08 / 1.1.0
 ==================
 
-  * Extracted from connect/express
+  * Default status to 500
+  * Support provided `error` to extend
+
+2014-09-08 / 1.0.1
+==================
+
+  * Fix accepting string message
+
+2014-09-08 / 1.0.0
+==================
+
+  * Initial release

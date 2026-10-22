@@ -1,293 +1,182 @@
-/*!
- * finalhandler
- * Copyright(c) 2014-2022 Douglas Christopher Wilson
- * MIT Licensed
- */
+"use strict"
 
-'use strict'
+var Buffer = require("safer-buffer").Buffer
 
-/**
- * Module dependencies.
- * @private
- */
+var bomHandling = require("./bom-handling")
+var mergeModules = require("./helpers/merge-exports")
 
-var debug = require('debug')('finalhandler')
-var encodeUrl = require('encodeurl')
-var escapeHtml = require('escape-html')
-var onFinished = require('on-finished')
-var parseUrl = require('parseurl')
-var statuses = require('statuses')
+// All codecs and aliases are kept here, keyed by encoding name/alias.
+// They are lazy loaded in `iconv.getCodec` from `encodings/index.js`.
+// Cannot initialize with { __proto__: null } because Boolean({ __proto__: null }) === true
+module.exports.encodings = null
 
-/**
- * Module variables.
- * @private
- */
+// Characters emitted in case of error.
+module.exports.defaultCharUnicode = "�"
+module.exports.defaultCharSingleByte = "?"
 
-var isFinished = onFinished.isFinished
+// Public API.
+module.exports.encode = function encode (str, encoding, options) {
+  str = "" + (str || "") // Ensure string.
 
-/**
- * Create a minimal HTML document.
- *
- * @param {string} message
- * @private
- */
+  var encoder = module.exports.getEncoder(encoding, options)
 
-function createHtmlDocument (message) {
-  var body = escapeHtml(message)
-    .replaceAll('\n', '<br>')
-    .replaceAll('  ', ' &nbsp;')
+  var res = encoder.write(str)
+  var trail = encoder.end()
 
-  return '<!DOCTYPE html>\n' +
-    '<html lang="en">\n' +
-    '<head>\n' +
-    '<meta charset="utf-8">\n' +
-    '<title>Error</title>\n' +
-    '</head>\n' +
-    '<body>\n' +
-    '<pre>' + body + '</pre>\n' +
-    '</body>\n' +
-    '</html>\n'
+  return (trail && trail.length > 0) ? Buffer.concat([res, trail]) : res
 }
 
-/**
- * Module exports.
- * @public
- */
-
-module.exports = finalhandler
-
-/**
- * Create a function to handle the final response.
- *
- * @param {Request} req
- * @param {Response} res
- * @param {Object} [options]
- * @return {Function}
- * @public
- */
-
-function finalhandler (req, res, options) {
-  var opts = options || {}
-
-  // get environment
-  var env = opts.env || process.env.NODE_ENV || 'development'
-
-  // get error callback
-  var onerror = opts.onerror
-
-  return function (err) {
-    var headers
-    var msg
-    var status
-
-    // ignore 404 on in-flight response
-    if (!err && res.headersSent) {
-      debug('cannot 404 after headers sent')
-      return
+module.exports.decode = function decode (buf, encoding, options) {
+  if (typeof buf === "string") {
+    if (!module.exports.skipDecodeWarning) {
+      console.error("Iconv-lite warning: decode()-ing strings is deprecated. Refer to https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding")
+      module.exports.skipDecodeWarning = true
     }
 
-    // unhandled error
-    if (err) {
-      // respect status code from error
-      status = getErrorStatusCode(err)
-
-      if (status === undefined) {
-        // fallback to status code on response
-        status = getResponseStatusCode(res)
-      } else {
-        // respect headers from error
-        headers = getErrorHeaders(err)
-      }
-
-      // get error message
-      msg = getErrorMessage(err, status, env)
-    } else {
-      // not found
-      status = 404
-      msg = 'Cannot ' + req.method + ' ' + encodeUrl(getResourceName(req))
-    }
-
-    debug('default %s', status)
-
-    // schedule onerror callback
-    if (err && onerror) {
-      setImmediate(onerror, err, req, res)
-    }
-
-    // cannot actually respond
-    if (res.headersSent) {
-      debug('cannot %d after headers sent', status)
-      if (req.socket) {
-        req.socket.destroy()
-      }
-      return
-    }
-
-    // send response
-    send(req, res, status, headers, msg)
+    buf = Buffer.from("" + (buf || ""), "binary") // Ensure buffer.
   }
+
+  var decoder = module.exports.getDecoder(encoding, options)
+
+  var res = decoder.write(buf)
+  var trail = decoder.end()
+
+  return trail ? (res + trail) : res
 }
 
-/**
- * Get headers from Error object.
- *
- * @param {Error} err
- * @return {object}
- * @private
- */
-
-function getErrorHeaders (err) {
-  if (!err.headers || typeof err.headers !== 'object') {
-    return undefined
-  }
-
-  return { ...err.headers }
-}
-
-/**
- * Get message from Error object, fallback to status message.
- *
- * @param {Error} err
- * @param {number} status
- * @param {string} env
- * @return {string}
- * @private
- */
-
-function getErrorMessage (err, status, env) {
-  var msg
-
-  if (env !== 'production') {
-    // use err.stack, which typically includes err.message
-    msg = err.stack
-
-    // fallback to err.toString() when possible
-    if (!msg && typeof err.toString === 'function') {
-      msg = err.toString()
-    }
-  }
-
-  return msg || statuses.message[status]
-}
-
-/**
- * Get status code from Error object.
- *
- * @param {Error} err
- * @return {number}
- * @private
- */
-
-function getErrorStatusCode (err) {
-  // check err.status
-  if (typeof err.status === 'number' && err.status >= 400 && err.status < 600) {
-    return err.status
-  }
-
-  // check err.statusCode
-  if (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600) {
-    return err.statusCode
-  }
-
-  return undefined
-}
-
-/**
- * Get resource name for the request.
- *
- * This is typically just the original pathname of the request
- * but will fallback to "resource" is that cannot be determined.
- *
- * @param {IncomingMessage} req
- * @return {string}
- * @private
- */
-
-function getResourceName (req) {
+module.exports.encodingExists = function encodingExists (enc) {
   try {
-    return parseUrl.original(req).pathname
+    module.exports.getCodec(enc)
+    return true
   } catch (e) {
-    return 'resource'
+    return false
   }
 }
 
-/**
- * Get status code from response.
- *
- * @param {OutgoingMessage} res
- * @return {number}
- * @private
- */
+// Legacy aliases to convert functions
+module.exports.toEncoding = module.exports.encode
+module.exports.fromEncoding = module.exports.decode
 
-function getResponseStatusCode (res) {
-  var status = res.statusCode
+// Search for a codec in iconv.encodings. Cache codec data in iconv._codecDataCache.
+module.exports._codecDataCache = { __proto__: null }
 
-  // default status code to 500 if outside valid range
-  if (typeof status !== 'number' || status < 400 || status > 599) {
-    status = 500
+module.exports.getCodec = function getCodec (encoding) {
+  if (!module.exports.encodings) {
+    var raw = require("../encodings")
+    // TODO: In future versions when old nodejs support is removed can use object.assign
+    module.exports.encodings = { __proto__: null } // Initialize as empty object.
+    mergeModules(module.exports.encodings, raw)
   }
 
-  return status
+  // Canonicalize encoding name: strip all non-alphanumeric chars and appended year.
+  var enc = module.exports._canonicalizeEncoding(encoding)
+
+  // Traverse iconv.encodings to find actual codec.
+  var codecOptions = {}
+  while (true) {
+    var codec = module.exports._codecDataCache[enc]
+
+    if (codec) { return codec }
+
+    var codecDef = module.exports.encodings[enc]
+
+    switch (typeof codecDef) {
+      case "string": // Direct alias to other encoding.
+        enc = codecDef
+        break
+
+      case "object": // Alias with options. Can be layered.
+        for (var key in codecDef) { codecOptions[key] = codecDef[key] }
+
+        if (!codecOptions.encodingName) { codecOptions.encodingName = enc }
+
+        enc = codecDef.type
+        break
+
+      case "function": // Codec itself.
+        if (!codecOptions.encodingName) { codecOptions.encodingName = enc }
+
+        // The codec function must load all tables and return object with .encoder and .decoder methods.
+        // It'll be called only once (for each different options object).
+        //
+        codec = new codecDef(codecOptions, module.exports)
+
+        module.exports._codecDataCache[codecOptions.encodingName] = codec // Save it to be reused later.
+        return codec
+
+      default:
+        throw new Error("Encoding not recognized: '" + encoding + "' (searched as: '" + enc + "')")
+    }
+  }
 }
 
-/**
- * Send response.
- *
- * @param {IncomingMessage} req
- * @param {OutgoingMessage} res
- * @param {number} status
- * @param {object} headers
- * @param {string} message
- * @private
- */
+module.exports._canonicalizeEncoding = function (encoding) {
+  // Canonicalize encoding name: strip all non-alphanumeric chars and appended year.
+  return ("" + encoding).toLowerCase().replace(/:\d{4}$|[^0-9a-z]/g, "")
+}
 
-function send (req, res, status, headers, message) {
-  function write () {
-    // response body
-    var body = createHtmlDocument(message)
+module.exports.getEncoder = function getEncoder (encoding, options) {
+  var codec = module.exports.getCodec(encoding)
+  var encoder = new codec.encoder(options, codec)
 
-    // response status
-    res.statusCode = status
+  if (codec.bomAware && options && options.addBOM) { encoder = new bomHandling.PrependBOM(encoder, options) }
 
-    if (req.httpVersionMajor < 2) {
-      res.statusMessage = statuses.message[status]
-    }
+  return encoder
+}
 
-    // remove any content headers
-    res.removeHeader('Content-Encoding')
-    res.removeHeader('Content-Language')
-    res.removeHeader('Content-Range')
+module.exports.getDecoder = function getDecoder (encoding, options) {
+  var codec = module.exports.getCodec(encoding)
+  var decoder = new codec.decoder(options, codec)
 
-    // response headers
-    for (const [key, value] of Object.entries(headers ?? {})) {
-      res.setHeader(key, value)
-    }
+  if (codec.bomAware && !(options && options.stripBOM === false)) { decoder = new bomHandling.StripBOM(decoder, options) }
 
-    // security headers
-    res.setHeader('Content-Security-Policy', "default-src 'none'")
-    res.setHeader('X-Content-Type-Options', 'nosniff')
+  return decoder
+}
 
-    // standard headers
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.setHeader('Content-Length', Buffer.byteLength(body, 'utf8'))
+// Streaming API
+// NOTE: Streaming API naturally depends on 'stream' module from Node.js. Unfortunately in browser environments this module can add
+// up to 100Kb to the output bundle. To avoid unnecessary code bloat, we don't enable Streaming API in browser by default.
+// If you would like to enable it explicitly, please add the following code to your app:
+// > iconv.enableStreamingAPI(require('stream'));
+module.exports.enableStreamingAPI = function enableStreamingAPI (streamModule) {
+  if (module.exports.supportsStreams) { return }
 
-    if (req.method === 'HEAD') {
-      res.end()
-      return
-    }
+  // Dependency-inject stream module to create IconvLite stream classes.
+  var streams = require("./streams")(streamModule)
 
-    res.end(body, 'utf8')
+  // Not public API yet, but expose the stream classes.
+  module.exports.IconvLiteEncoderStream = streams.IconvLiteEncoderStream
+  module.exports.IconvLiteDecoderStream = streams.IconvLiteDecoderStream
+
+  // Streaming API.
+  module.exports.encodeStream = function encodeStream (encoding, options) {
+    return new module.exports.IconvLiteEncoderStream(module.exports.getEncoder(encoding, options), options)
   }
 
-  if (isFinished(req)) {
-    write()
-    return
+  module.exports.decodeStream = function decodeStream (encoding, options) {
+    return new module.exports.IconvLiteDecoderStream(module.exports.getDecoder(encoding, options), options)
   }
 
-  // unpipe everything from the request
-  req.unpipe()
+  module.exports.supportsStreams = true
+}
 
-  // flush the request
-  onFinished(req, write)
-  req.resume()
+// Enable Streaming API automatically if 'stream' module is available and non-empty (the majority of environments).
+var streamModule
+try {
+  streamModule = require("stream")
+} catch (e) {}
+
+if (streamModule && streamModule.Transform) {
+  module.exports.enableStreamingAPI(streamModule)
+} else {
+  // In rare cases where 'stream' module is not available by default, throw a helpful exception.
+  module.exports.encodeStream = module.exports.decodeStream = function () {
+    throw new Error("iconv-lite Streaming API is not enabled. Use iconv.enableStreamingAPI(require('stream')); to enable it.")
+  }
+}
+
+// Some environments, such as browsers, may not load JavaScript files as UTF-8
+// eslint-disable-next-line no-constant-condition
+if ("Ā" !== "\u0100") {
+  console.error("iconv-lite warning: js files use non-utf8 encoding. See https://github.com/ashtuchkin/iconv-lite/wiki/Javascript-source-file-encodings for more info.")
 }
